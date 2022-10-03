@@ -5,53 +5,62 @@
 local api = vim.api
 local cmd = vim.api.nvim_create_autocmd
 local ui = api.nvim_list_uis()[1]
-local popup = require("plenary.popup")
+
 require 'split'
-local M = {}
+local M = {
+    opt = {
+        main_win_width = 50,
+        main_win_height = 20,
+        main_win_style = "minimal",
+        main_win_relavent = "win",
+        main_win_border = true,
+        preview_win_style = "minimal",
+        preview_win_relavent = "win",
+        preview_win_border = true,
+        input_win_border = true,
+        custom_keys = {}
+    }
+}
 
 function M.setup(opt)
+    if opt then
+        M.opt = vim.tbl_deep_extend('force', M.opt, opt)
+    end
+
     M.main_win = nil
     M.main_buf = nil
-    M.main_win_width = 50
-    M.main_win_height = 20
-    M.main_win_style = "minimal"
-    M.main_win_relavent = "win"
-    M.main_win_border = 'double'
-    M.main_col = ui.width / 2 - M.main_win_width / 2
-    M.main_row = ui.height / 2 - M.main_win_height / 2
-
-    -- Preview mode window
     M.preview_win = nil
     M.preview_buf = nil
+
+    M.main_col = ui.width / 2 - M.opt.main_win_width / 2
+    M.main_row = ui.height / 2 - M.opt.main_win_height / 2
+
     M.preview_win_width = ui.width / 2
     M.preview_win_height = ui.height / 2
-    M.preview_win_style = "minimal"
-    M.preview_win_relavent = "win"
-    M.preview_win_border = 'double'
-    M.preview_col = M.main_win_width / 2 - M.preview_win_width / 2
-    M.preview_row = M.main_win_height / 2 - M.preview_win_height / 2
-    M.custom_keys = {}
 
+    M.preview_col = M.opt.main_win_width / 2 - M.preview_win_width / 2
+    M.preview_row = M.opt.main_win_height / 2 - M.preview_win_height / 2
 end
 
 function M.open()
     M.back_win = api.nvim_get_current_win()
     if not M.main_buf and not M.main_win then
         M.main_buf = api.nvim_create_buf(false, true)
-        local borderchars = { "─", "│", "─", "│", "╭", "╮", "╯", "╰" }
-        local win_id, win = popup.create(M.main_buf, {
-            title = "Outline - Buffers",
-            highlight = "OutlineWindow",
-            line = math.floor(((vim.o.lines - 5) / 2) - 1),
-            col = math.floor((vim.o.columns - M.main_win_width) / 2),
-            minwidth = M.main_win_width,
-            minheight = 5,
-            borderchars = borderchars,
+        local win_id = api.nvim_open_win(M.main_buf, 1, {
+            relative = M.opt.main_win_relavent,
+            style = M.opt.main_win_style,
+            row = math.floor(((vim.o.lines - 5) / 2) - 1),
+            col = math.floor((vim.o.columns - M.opt.main_win_width) / 2),
+            width = M.opt.main_win_width,
+            height = 5,
+            border = M.opt.main_win_border,
         })
         M.main_win = win_id
         M.build_win()
         M.setKeys(M.back_win, M.main_buf)
         M.add_custom_keys()
+
+        api.nvim_win_set_option(M.main_win, 'cursorline', true)
     else
         xpcall(function()
             api.nvim_win_close(M.main_win, false)
@@ -67,7 +76,7 @@ function M.open()
 end
 
 function M.add_custom_keys()
-    for k, v in pairs(M.custom_keys) do
+    for k, v in pairs(M.opt.custom_keys) do
         api.nvim_buf_set_keymap(M.main_buf, 'n', v.key,
             string.format([[:<C-U>lua require'outline'.set_saved_buffer(%s,%s)<CR>]], M.back_win, tonumber(v.buffer)),
             { nowait = true, noremap = true, silent = true })
@@ -93,21 +102,19 @@ function M.openPreview(buf)
 
     local width = M.preview_win_width
     local height = M.preview_win_height
-    local borderchars = { "─", "│", "─", "│", "╭", "╮", "╯", "╰" }
-    local win_id, win = popup.create(M.preview_buf, {
-        title = "Outline - Buffers",
-        highlight = "OutlineWindow",
-        line = math.floor(((vim.o.lines - height) / 2) - 1),
+    local win_id = api.nvim_open_win(M.preview_buf, 0, {
+        relative = M.opt.preview_win_relavent,
+        style = M.opt.preview_win_style,
+        row = math.floor(((vim.o.lines - height) / 2) - 1),
         col = math.floor((vim.o.columns - width) / 2),
-        maxwidth = width,
-        maxheight = height,
-        borderchars = borderchars,
-        minheight = height,
-        minwidth = width
+        width = width,
+        height = height,
+        border = M.opt.preview_win_border,
     })
 
     M.preview_win = win_id
     api.nvim_buf_set_option(M.preview_buf, 'modifiable', false)
+    api.nvim_win_set_option(M.preview_win, 'cursorline', false)
     M.setPreviewKeys(M.preview_buf)
 end
 
@@ -196,12 +203,12 @@ function M.list_buffers()
             end
             local buffer_icon = buffer_changed and '﨣' or ''
 
-            local max_width = M.main_win_width - #buffer_name - 20
+            local max_width = M.opt.main_win_width - #buffer_name - 20
             local buffer_name_width = string.len(buffer_name)
             if buffer_name_width > max_width then
                 buffer_name = "..." .. string.sub(buffer_name, 1 - max_width)
             end
-            for b, bind in pairs(M.custom_keys) do
+            for b, bind in pairs(M.opt.custom_keys) do
                 if bind.buffer == buffer_id then
                     buffer_name = string.format("%s %s", bind.key .. " ", buffer_name)
                 end
@@ -247,15 +254,14 @@ end
 function M.open_input_window()
     M.input_buf = api.nvim_create_buf(false, true)
     local ok, result = pcall(vim.api.nvim_buf_get_var, M.input_buf, 'lsp_enabled')
-    local borderchars = { "─", "│", "─", "│", "╭", "╮", "╯", "╰" }
-    local win_id, win = popup.create(M.input_buf, {
-        title = "Input Keybinding:",
-        highlight = "OutlineWindow",
-        line = math.floor(((vim.o.lines - 1) / 2) - 1),
+    local win_id = api.nvim_open_win(M.input_buf, 1, {
+        relative = 'win',
+        style = 'minimal',
+        row = math.floor(((vim.o.lines - 1) / 2) - 1),
         col = math.floor((vim.o.columns - 20) / 2),
-        minwidth = 20,
+        width = 20,
         height = 1,
-        borderchars = borderchars,
+        border = M.opt.input_win_border,
     })
     M.input_win = win_id
     M.set_input_keys(M.input_buf)
