@@ -5,12 +5,13 @@
 local api = vim.api
 local cmd = vim.api.nvim_create_autocmd
 local ui = api.nvim_list_uis()[1]
+local di = require'nvim-web-devicons'
 
 require 'split'
 local M = {
     opt = {
-        main_win_width = 50,
-        main_win_height = 20,
+        main_win_width = 100,
+        main_win_height = 30,
         main_win_style = "minimal",
         main_win_relavent = "win",
         main_win_border = true,
@@ -187,6 +188,7 @@ function M.list_buffers()
     local buffer_names = {}
     table.sort(buffers)
     local current_buffer = api.nvim_get_current_buf()
+    local line = 0
     for _, buffer in ipairs(buffers) do
         --check if buffers are avtive
         if api.nvim_buf_is_loaded(buffer) then
@@ -194,16 +196,17 @@ function M.list_buffers()
             -- check if buffer has changed
             if buffer_name == "" or nil then goto continue end
 
-            local buffer_changed = api.nvim_buf_get_option(buffer, 'modified')
             local buffer_id = api.nvim_buf_get_number(buffer)
+            local ext = vim.fn.fnamemodify(buffer_name, ':e')
+            local buffer_icon, highlight = di.get_icon(buffer_name, ext)
 
-            local active_buff = ""
-            if buffer_id == current_buffer then
-                active_buff = ""
+            print(highlight)
+
+            if not buffer_icon then
+                buffer_icon = '  '
             end
-            local buffer_icon = buffer_changed and '﨣' or ''
 
-            local max_width = M.opt.main_win_width - #buffer_name - 20
+            local max_width = M.opt.main_win_width - #buffer_name - 10
             local buffer_name_width = string.len(buffer_name)
             if buffer_name_width > max_width then
                 buffer_name = "..." .. string.sub(buffer_name, 1 - max_width)
@@ -213,12 +216,16 @@ function M.list_buffers()
                     buffer_name = string.format("%s %s", bind.key .. " ", buffer_name)
                 end
             end
-            buffer_names[#buffer_names + 1] = string.format("%s %s %s %s", buffer_id, buffer_name, active_buff, buffer_icon)
+
+            local output = string.format("%-3s: %s %s", buffer_id, buffer_icon, buffer_name)
+            api.nvim_buf_set_lines(M.main_buf, line, 1, false, { output })
+            api.nvim_buf_add_highlight(M.main_buf, 0, 'Number', line, 0, 3)
+            api.nvim_buf_add_highlight(M.main_buf, 0, highlight, line, 5, 9)
+            api.nvim_buf_add_highlight(M.main_buf, 0, 'Directory', line, 9, -1)
+
+            line = line + 1
             ::continue::
         end
-    end
-    if #buffer_names ~= 0 then
-        api.nvim_buf_set_lines(M.main_buf, 0, #(buffer_names), false, buffer_names)
     end
 end
 
