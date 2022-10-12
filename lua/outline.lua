@@ -204,9 +204,9 @@ function M.list_buffers()
                 buffer_icon = '  '
             end
 
-            local max_width = M.opt.main_win_width - #buffer_name - 10
-            local buffer_name_width = string.len(buffer_name)
-            if buffer_name_width > max_width then
+            local max_width = M.opt.main_win_width - 11
+            local buffer_name_width = #buffer_name
+            if #buffer_name > max_width then
                 buffer_name = "..." .. string.sub(buffer_name, 1 - max_width)
             end
             for b, bind in pairs(M.opt.custom_keys) do
