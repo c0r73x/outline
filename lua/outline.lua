@@ -61,7 +61,9 @@ function M.open()
         return
     end
 
+    M.back_buf = api.nvim_get_current_buf()
     M.back_win = api.nvim_get_current_win()
+
     if not M.main_buf and not M.main_win then
         M.main_buf = api.nvim_create_buf(false, true)
         local win_id = api.nvim_open_win(M.main_buf, 1, {
@@ -204,7 +206,7 @@ function M.list_buffers()
     local buffers = api.nvim_list_bufs()
     local buffer_names = {}
     table.sort(buffers)
-    local current_buffer = api.nvim_get_current_buf()
+    local current_line = 1
     local line = 0
     for _, buffer in ipairs(buffers) do
         --check if buffers are avtive
@@ -213,6 +215,7 @@ function M.list_buffers()
             -- check if buffer has changed
             if buffer_name == "" or nil then goto continue end
 
+            buffer_name = vim.fn.fnamemodify(buffer_name, ':.')
             local buffer_id = api.nvim_buf_get_number(buffer)
             local ext = vim.fn.fnamemodify(buffer_name, ':e')
             local buffer_icon, highlight = di.get_icon(buffer_name, ext)
@@ -239,9 +242,17 @@ function M.list_buffers()
             api.nvim_buf_add_highlight(M.main_buf, 0, 'Directory', line, 9, -1)
 
             line = line + 1
+
+            if M.back_buf == buffer then
+                current_line = line
+            end
+
             ::continue::
         end
     end
+
+    print (M.back_buf, current_line)
+    vim.api.nvim_win_set_cursor(M.main_win, { current_line, 0 })
 end
 
 function M.set_buffer(win, buf, opt)
