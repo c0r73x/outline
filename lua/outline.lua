@@ -13,10 +13,10 @@ local M = {
         main_win_width = 100,
         main_win_height = 30,
         main_win_style = "minimal",
-        main_win_relavent = "win",
+        main_win_relavent = "editor",
         main_win_border = true,
         preview_win_style = "minimal",
-        preview_win_relavent = "win",
+        preview_win_relavent = "editor",
         preview_win_border = true,
         input_win_border = true,
         custom_keys = {}
@@ -199,8 +199,6 @@ function M.list_buffers()
             local buffer_id = api.nvim_buf_get_number(buffer)
             local ext = vim.fn.fnamemodify(buffer_name, ':e')
             local buffer_icon, highlight = di.get_icon(buffer_name, ext)
-
-            print(highlight)
 
             if not buffer_icon then
                 buffer_icon = '  '
