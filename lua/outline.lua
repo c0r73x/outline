@@ -44,6 +44,23 @@ function M.setup(opt)
 end
 
 function M.open()
+    local buffers = api.nvim_list_bufs()
+    local buffercount = 0
+    for _, buffer in ipairs(buffers) do
+        --check if buffers are avtive
+        if api.nvim_buf_is_loaded(buffer) then
+            local buffer_name = api.nvim_buf_get_name(buffer)
+
+            if #buffer_name > 0 then
+                buffercount = buffercount + 1
+            end
+        end
+    end
+
+    if buffercount == 0 then
+        return
+    end
+
     M.back_win = api.nvim_get_current_win()
     if not M.main_buf and not M.main_win then
         M.main_buf = api.nvim_create_buf(false, true)
