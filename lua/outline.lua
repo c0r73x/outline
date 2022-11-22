@@ -236,7 +236,7 @@ function M.list_buffers()
             end
 
             local output = string.format("%-3s: %s %s", buffer_id, buffer_icon, buffer_name)
-            api.nvim_buf_set_lines(M.main_buf, line, 1, false, { output })
+            api.nvim_buf_set_lines(M.main_buf, line, line + 1, false, { output })
             api.nvim_buf_add_highlight(M.main_buf, 0, 'Number', line, 0, 3)
             api.nvim_buf_add_highlight(M.main_buf, 0, highlight, line, 5, 9)
             api.nvim_buf_add_highlight(M.main_buf, 0, 'Directory', line, 9, -1)
@@ -251,7 +251,6 @@ function M.list_buffers()
         end
     end
 
-    print (M.back_buf, current_line)
     vim.api.nvim_win_set_cursor(M.main_win, { current_line, 0 })
 end
 
